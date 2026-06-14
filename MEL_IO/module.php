@@ -531,6 +531,44 @@ class MELCloudIO extends IPSModule
 
 
     /**
+     * Is_Unauthorized (prüft, ob der cURL-Fehler bzw. HTTP-Code ein 401 ist)
+     *
+     * Bei abgelaufenem ContextKey antwortet MELCloud mit HTTP 401. Wegen
+     * CURLOPT_FAILONERROR landet das als cURL-Fehler ("returned error: 401"),
+     * deshalb wird sowohl der Fehlertext als auch der HTTP-Code geprüft.
+     *
+     * @param $cURL_Error
+     * @param $http_code
+     * @return bool
+     */
+    private function Is_Unauthorized($cURL_Error, $http_code)
+    {
+        if ((int) $http_code === 401) {
+            return true;
+        }
+        if (is_string($cURL_Error) && strpos($cURL_Error, '401') !== false) {
+            return true;
+        }
+        return false;
+    }
+
+
+    /**
+     * Token_Reset (verwirft den gespeicherten ContextKey, erzwingt Neu-Login)
+     *
+     * @return void
+     */
+    private function Token_Reset()
+    {
+        if (IPS_GetKernelVersion() >= 5.1) {
+            $this->WriteAttributeString('TOKEN', '');
+        } else {
+            $this->SetBufferX('TOKEN', '');
+        }
+    }
+
+
+    /**
      * Data_Get (http-get with curl)
      *
      * @param $url
@@ -594,16 +632,31 @@ class MELCloudIO extends IPSModule
             return false;
         }
 
-        if (curl_error($curl) !== '') {
-            $cURL_Error = curl_error($curl);
+        $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $cURL_Error = curl_error($curl);
+        curl_close($curl);
+
+        if ($cURL_Error !== '') {
+            // HTTP 401 = ContextKey abgelaufen. Einmalig Token verwerfen, neu
+            // einloggen und den Abruf wiederholen, statt nur den Fehler zu loggen.
+            if ($this->Is_Unauthorized($cURL_Error, $http_code) === true && $retry === false) {
+                $this->SendDebug(__FUNCTION__, $this->Translate('ContextKey expired (HTTP 401) - re-login is performed'), 0);
+                $this->Token_Reset();
+
+                $token = $this->Login();
+                if ($token === false) {
+                    $this->SendDebug(__FUNCTION__, $this->Translate('Login FAILED'), 0);
+                    IPS_LogMessage('MELCloud-' . __FUNCTION__, $this->Translate('ERROR // Re-login after HTTP 401 failed'));
+                    return false;
+                }
+
+                return $this->Data_Get($url, true);
+            }
+
             $this->SendDebug(__FUNCTION__, $this->Translate('ERROR // Connection to the MELCloud failed // cURL Error = ' . $cURL_Error), 0);
             IPS_LogMessage('MELCloud-' . __FUNCTION__, $this->Translate('ERROR // Connection to the MELCloud failed // cURL Error = ') . $cURL_Error);
-            curl_close($curl);
             return false;
         }
-
-        $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        curl_close($curl);
 
         if ($retry === false) {
             if ($data === false) {
@@ -644,9 +697,10 @@ class MELCloudIO extends IPSModule
      * @param $deviceid
      * @param $action
      * @param $parameter
+     * @param bool $retry
      * @return false|array
      */
-    private function Data_Set($buildingid, $deviceid, $action, $parameter)
+    private function Data_Set($buildingid, $deviceid, $action, $parameter, $retry = false)
     {
         $DebugActive = $this->ReadPropertyBoolean('debug');
 
@@ -814,16 +868,31 @@ class MELCloudIO extends IPSModule
             return false;
         }
 
-        if (curl_error($curl) !== '') {
-            $cURL_Error = curl_error($curl);
+        $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $cURL_Error = curl_error($curl);
+        curl_close($curl);
+
+        if ($cURL_Error !== '') {
+            // HTTP 401 = ContextKey abgelaufen. Einmalig Token verwerfen, neu
+            // einloggen und den Sendebefehl mit gleichen Parametern wiederholen.
+            if ($this->Is_Unauthorized($cURL_Error, $http_code) === true && $retry === false) {
+                $this->SendDebug(__FUNCTION__, $this->Translate('ContextKey expired (HTTP 401) - re-login is performed'), 0);
+                $this->Token_Reset();
+
+                $token = $this->Login();
+                if ($token === false) {
+                    $this->SendDebug(__FUNCTION__, $this->Translate('Login FAILED'), 0);
+                    IPS_LogMessage('MELCloud-' . __FUNCTION__, $this->Translate('ERROR // Re-login after HTTP 401 failed'));
+                    return false;
+                }
+
+                return $this->Data_Set($buildingid, $deviceid, $action, $parameter, true);
+            }
+
             $this->SendDebug(__FUNCTION__, $this->Translate('ERROR // Connection to the MELCloud failed // cURL Error = ' . $cURL_Error), 0);
             IPS_LogMessage('MELCloud-' . __FUNCTION__, $this->Translate('ERROR // Connection to the MELCloud failed // cURL Error = ') . $cURL_Error);
-            curl_close($curl);
             return false;
         }
-
-        $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        curl_close($curl);
 
         if ($data === false) {
             $this->Debug_OutputGenerate($this->Translate('ERROR when sending data'), $http_code);
