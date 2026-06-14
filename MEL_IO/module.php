@@ -145,8 +145,6 @@ class MELCloudIO extends IPSModule
         $FormData_Main1 = '{
     "elements":
     [
-        { "type": "Label", "label": "##### MELCloud I/O v1.0 by Bayaro - www.bayaro.net #####" },
-        { "type": "Label", "label": "##### 28.12.2018 - 01:25 #####"},
         { "type": "ValidationTextBox", "name": "AccountEmail", "caption": "E-Mail" },
         { "type": "PasswordTextBox", "name": "AccountPassword", "caption": "Password" },
         { "type": "Label", "label": "----------------------------------------------------------------------------------------------------------------------------" },
