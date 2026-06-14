@@ -640,6 +640,24 @@ class MELCloudDevice extends IPSModule
             }
         }
 
+        // Sicherstellen, dass die neue Instanz mit der vorhandenen MELCloudIO als
+        // Gateway verbunden ist. Bei frisch erstellten Instanzen greift der
+        // automatische ConnectParent sonst erst beim naechsten ApplyChanges - dann
+        // fehlt beim ersten Datenabruf das Gateway.
+        $ParentSocketID = (int) @IPS_GetInstance($this->InstanceID)['ConnectionID'];
+        if ($ParentSocketID <= 0) {
+            $MELIO = IPS_GetInstanceListByModuleID('{E65CACF9-2088-48F6-946A-9DF65C1B4527}');
+            if (is_array($MELIO) && count($MELIO) > 0) {
+                @IPS_ConnectInstance($this->InstanceID, $MELIO[0]);
+                if (IPS_HasChanges($this->InstanceID) === true) {
+                    @IPS_ApplyChanges($this->InstanceID);
+                }
+                $this->SendDebug(__FUNCTION__, $this->Translate('Gateway connected') . ' // MELCloudIO = ' . $MELIO[0], 0);
+            } else {
+                $this->SendDebug(__FUNCTION__, $this->Translate('ERROR // No MELCloudIO instance found - please create the I/O instance first'), 0);
+            }
+        }
+
         $DeviceAR = $this->Device_GetListInfo();
 
         // PHP 8: array_key_exists() crasht, wenn $DeviceAR kein Array ist.
@@ -769,12 +787,20 @@ class MELCloudDevice extends IPSModule
      */
     public function OperationMode_Set(int $value)
     {
-        $ModelSupportsOperationModeX = $this->GetBuffer('OperationMode_' . $value);
-        if ($ModelSupportsOperationModeX !== '') {
+        $ModelSupportsOperationModeX = $this->GetBufferX('OperationMode_' . $value);
+
+        // Buffer sind nach Kernel-Neustart leer, bis Device_GetListInfo() lief.
+        // Dann Gerätedaten frisch holen (fuellt Buffer) und erneut lesen.
+        if ($ModelSupportsOperationModeX === false || $ModelSupportsOperationModeX === NULL) {
+            $this->Device_GetListInfo();
+            $ModelSupportsOperationModeX = $this->GetBufferX('OperationMode_' . $value);
+        }
+
+        if ($ModelSupportsOperationModeX !== false && $ModelSupportsOperationModeX !== NULL) {
             if ((int)$ModelSupportsOperationModeX === 1) {
                 $resultAR = $this->Data_Set('OperationMode', $value);
 
-                if (@array_key_exists('OperationMode', $resultAR) === true) {
+                if (is_array($resultAR) && @array_key_exists('OperationMode', $resultAR) === true) {
                     $this->FillDeviceVariables($resultAR);
                     if ($resultAR['OperationMode'] == $value) {
                         return true;
@@ -1076,12 +1102,19 @@ class MELCloudDevice extends IPSModule
      */
     private function Check_Feature($DeviceAR, $FeatureName)
     {
-        if (@array_key_exists($FeatureName, $DeviceAR['Device']) === true) {
+        if (is_array($DeviceAR) === false) {
+            return false;
+        }
+        if (is_array($DeviceAR['Device'] ?? null) === true && @array_key_exists($FeatureName, $DeviceAR['Device']) === true) {
             if ($DeviceAR['Device'][$FeatureName] === true) {
                 return true;
             }
         }
-
+        if (@array_key_exists($FeatureName, $DeviceAR) === true) {
+            if ($DeviceAR[$FeatureName] === true) {
+                return true;
+            }
+        }
         return false;
     }
 
@@ -1097,6 +1130,17 @@ class MELCloudDevice extends IPSModule
         if ($DeviceDataAR === false) {
             $this->SendDebug(__FUNCTION__, $this->Translate('Login FAILED') . ' // ' . $this->Translate('Processing is terminated'), 0);
             return false;
+        }
+
+        // PHP 8: Die folgenden Pruefungen greifen auf $DeviceDataAR['Device'] zu.
+        // Antworten von Data_Set (nach Steuerbefehlen) haben keinen 'Device'-
+        // Unterknoten - dann waere der Zugriff null und array_key_exists() crasht.
+        if (is_array($DeviceDataAR) === false) {
+            $this->SendDebug(__FUNCTION__, $this->Translate('Processing is terminated'), 0);
+            return false;
+        }
+        if (@array_key_exists('Device', $DeviceDataAR) === false || is_array($DeviceDataAR['Device']) === false) {
+            $DeviceDataAR['Device'] = array();
         }
 
         // update of the variable
