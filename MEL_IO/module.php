@@ -1273,7 +1273,19 @@ class MELCloudIO extends IPSModule
             $this->SendDebug(__FUNCTION__, $this->Translate('ERROR when sending data'), 0);
         }
 
+        // Unter PHP 8 wirft json_decode() einen TypeError, wenn kein String
+        // übergeben wird. SendDataToChildren liefert je nach IPS-Version/Antwort
+        // auch bool oder array zurück - das hier abfangen, sonst Fatal Error.
+        if (is_string($resultJson) === false) {
+            $this->SendDebug(__FUNCTION__, $this->Translate('No valid response from child instance'), 0);
+            return false;
+        }
+
         $result = json_decode($resultJson, true);
+        if (is_array($result) === false) {
+            $this->SendDebug(__FUNCTION__, $this->Translate('No valid response from child instance'), 0);
+            return false;
+        }
         if (@array_key_exists('error', $result) === true) {
             $error = $result['error'];
             $this->SendDebug(__FUNCTION__, $this->Translate('ERROR when sending data') . ' // ' . $this->Translate('Error') . ' = ' . $error, 0);
@@ -1302,8 +1314,9 @@ class MELCloudIO extends IPSModule
 
         $resultX = true;
 
-        $maxExecutionTime = count($DevicesAR) * 2.5;
-        ini_set('max_execution_time', $maxExecutionTime);
+        // Hinweis: ini_set('max_execution_time', ...) ist in IPS aus
+        // Sicherheitsgründen deaktiviert und würde nur eine Warnung erzeugen.
+        // IPS verwaltet die Ausführungszeit selbst, daher hier kein ini_set mehr.
 
         foreach ($DevicesAR as $DeviceEntryAR) {
             $dataAR['action'] = 'GetList_ByIOfunction';
