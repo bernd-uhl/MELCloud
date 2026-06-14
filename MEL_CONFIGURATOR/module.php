@@ -143,6 +143,18 @@ class MELCloudConfigurator extends IPSModule
     }
 
 
+    /**
+     * RefreshDeviceList (lädt das Konfigurationsformular neu und holt damit die
+     * aktuelle Geräteliste frisch aus der MELCloud)
+     *
+     * @return void
+     */
+    public function RefreshDeviceList()
+    {
+        $this->ReloadForm();
+    }
+
+
 
     /********** INTERNAL FUNCTIONS **********/
 
@@ -357,10 +369,11 @@ class MELCloudConfigurator extends IPSModule
 
                     $Echo_Text = $this->Translate('The instance was created.');
                     $BTN_Label = $this->Translate('Create instance') . ': ' . $VALUE_devicename;
+                    $VALUE_devicename_BTN = addslashes($VALUE_devicename);
                     $FormData->actions[] = array(
                         'type' => 'Button',
                         'label' => $BTN_Label,
-                        'onClick' => '$InstanceID = IPS_CreateInstance(\'{E69F33DB-96B6-4C88-B446-14BCEDA86511}\'); IPS_SetParent($InstanceID, ' . $CategoryIDDeviceInstances . '); MEL_DeviceInstance_Configuration($InstanceID, \'' . $VALUE_buildingid . '\', \'' . $VALUE_deviceid . '\', \'' . $VALUE_devicetype_BTN . '\'); echo \'' . $Echo_Text . '\';'
+                        'onClick' => '$InstanceID = IPS_CreateInstance(\'{E69F33DB-96B6-4C88-B446-14BCEDA86511}\'); IPS_SetParent($InstanceID, ' . $CategoryIDDeviceInstances . '); MEL_DeviceInstance_Configuration($InstanceID, \'' . $VALUE_buildingid . '\', \'' . $VALUE_deviceid . '\', \'' . $VALUE_devicetype_BTN . '\', \'' . $VALUE_devicename_BTN . '\'); echo \'' . $Echo_Text . '\';'
                     );
                 }
                 $DevicesAvail = true;
@@ -372,6 +385,15 @@ class MELCloudConfigurator extends IPSModule
         } else {
             $FormData->actions[0]->rowCount = 0;
         }
+
+        // Button zum Neuladen der Geräteliste - wird ans Ende angehängt, damit
+        // die Liste auf actions[0] bleibt (der Listenaufbau oben referenziert actions[0]).
+        $FormData->actions[] = array(
+            'type' => 'Button',
+            'label' => $this->Translate('Refresh device list'),
+            'onClick' => 'MELC_RefreshDeviceList($id);'
+        );
+
         $FormDataX = json_encode($FormData);
 
         if ($DebugActive === true) {
