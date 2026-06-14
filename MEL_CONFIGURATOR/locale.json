@@ -1,7 +1,6 @@
 {
     "translations": {
         "de": {
-			"##### MELCloud Configurator v1.0 by Bayaro - www.bayaro.net #####": "##### MELCloud Konfigurator v1.0 by Bayaro - www.bayaro.net #####",
 			"Category for device instance(s)": "Kategorie für Geräte-Instanz(en)",
             "MELCloud Configurator": "MELCloud Konfigurator",
             "Creating instance": "Instanz wird erstellt",
