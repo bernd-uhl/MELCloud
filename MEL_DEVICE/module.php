@@ -352,11 +352,14 @@ class MELCloudDevice extends IPSModule
             return false;
         }
 
-        if ((isset($DevicesAR) === false) || (@array_key_exists('DeviceID', $DevicesAR[0]) === false) || (@array_key_exists('DeviceID', $DevicesAR[0]) === NULL)) {
+        // PHP 8: array_key_exists() auf $DevicesAR[0] crasht, wenn die Liste
+        // leer oder kein Array ist. Daher zuerst auf nicht-leeres Array prüfen.
+        if (is_array($DevicesAR) === false || count($DevicesAR) === 0 || is_array($DevicesAR[0]) === false || (@array_key_exists('DeviceID', $DevicesAR[0]) === false)) {
             $this->SendDebug(__FUNCTION__, $this->Translate('ERROR // Device data could not be read from MELCloud') . ' // DevicesAR = ' . json_encode($DevicesAR), 0);
             return false;
         }
 
+        $DeviceAR = false;
         foreach ($DevicesAR as $DeviceEntryAR) {
             if (($DeviceEntryAR['BuildingID'] == $buildingid) && ($DeviceEntryAR['DeviceID'] == $deviceid)) {
                 $DeviceAR = $DeviceEntryAR;
@@ -364,7 +367,8 @@ class MELCloudDevice extends IPSModule
             }
         }
 
-        if ((@array_key_exists('DeviceID', $DeviceAR) === false) || (@array_key_exists('DeviceID', $DeviceAR) === NULL)) {
+        // $DeviceAR bleibt false, wenn das Gerät nicht gefunden wurde.
+        if (is_array($DeviceAR) === false || (@array_key_exists('DeviceID', $DeviceAR) === false)) {
             $this->SendDebug(__FUNCTION__, $this->Translate('ERROR') . ' // ' . $this->Translate('Device not found') . ' // DevicesAR = ' . json_encode($DeviceAR), 0);
             return false;
         }
@@ -613,7 +617,7 @@ class MELCloudDevice extends IPSModule
      * @param string $DeviceType (0 = Air condition)
      * @return bool
      */
-    public function DeviceInstance_Configuration(string $BuildingID, string $DeviceID, string $DeviceType)
+    public function DeviceInstance_Configuration(string $BuildingID, string $DeviceID, string $DeviceType, string $DeviceName = '')
     {
         if ((($BuildingID === '') || ($DeviceID === '') || ($DeviceType === '')) || (($BuildingID === NULL) || ($DeviceID === NULL) || ($DeviceType === NULL))) {
             $this->SendDebug(__FUNCTION__, $this->Translate('ERROR') . ' // ' . $this->Translate('Building-ID') . $this->Translate(' and ') . $this->Translate('Device-ID') . $this->Translate(' and ') . $this->Translate('Device-Type') . $this->Translate(' must not be empty!'), 0);
@@ -623,6 +627,11 @@ class MELCloudDevice extends IPSModule
         @IPS_SetProperty($this->InstanceID, 'BuildingID', $BuildingID);
         @IPS_SetProperty($this->InstanceID, 'DeviceID', $DeviceID);
         @IPS_SetProperty($this->InstanceID, 'DeviceType', $DeviceType);
+        // Gerätename direkt aus dem Konfigurator übernehmen, damit der Name auch
+        // dann gesetzt ist, wenn Device_GetListInfo() (noch) keine Daten liefert.
+        if ($DeviceName !== '') {
+            @IPS_SetProperty($this->InstanceID, 'DeviceName', $DeviceName);
+        }
         if (IPS_HasChanges($this->InstanceID) === true) {
             $result = @IPS_ApplyChanges($this->InstanceID);
             if ($result === false) {
@@ -633,7 +642,17 @@ class MELCloudDevice extends IPSModule
 
         $DeviceAR = $this->Device_GetListInfo();
 
-        if ((@array_key_exists('DeviceID', $DeviceAR) === false) || (@array_key_exists('DeviceID', $DeviceAR) === NULL)) {
+        // PHP 8: array_key_exists() crasht, wenn $DeviceAR kein Array ist.
+        // Device_GetListInfo() liefert bei Fehler/fehlendem Login false zurück.
+        // In dem Fall trotzdem den Instanznamen aus dem Parameter setzen, damit
+        // das Gerät nicht namenlos bleibt.
+        if (is_array($DeviceAR) === false || (@array_key_exists('DeviceID', $DeviceAR) === false)) {
+            if ($DeviceName !== '') {
+                $currentName = IPS_GetName($this->InstanceID);
+                if ($currentName === 'MELCloud Device' || $currentName === '' || strpos($currentName, 'MELCloud Device') === 0) {
+                    IPS_SetName($this->InstanceID, $DeviceName);
+                }
+            }
             $this->SetInstanceStatus_IfDifferent($this->InstanceID, 202);
             return false;
         }
@@ -675,12 +694,15 @@ class MELCloudDevice extends IPSModule
             }
         }
 
-        // Set instance name
-        if (@array_key_exists('DeviceName', $DeviceAR) === true) {
+        // Set instance name - nur einmalig, solange die Instanz noch ihren
+        // Standardnamen trägt. So bleibt eine spätere manuelle Umbenennung erhalten.
+        $currentName = IPS_GetName($this->InstanceID);
+        $isDefaultName = ($currentName === 'MELCloud Device' || $currentName === '' || strpos($currentName, 'MELCloud Device') === 0);
+        if ($isDefaultName === true && @array_key_exists('DeviceName', $DeviceAR) === true) {
             if ($DeviceAR['DeviceName'] !== '') {
-                IPS_SetName($this->InstanceID, $this->Translate('MELCloud Device') . ' - ' . $DeviceAR['DeviceName']);
+                IPS_SetName($this->InstanceID, $DeviceAR['DeviceName']);
             } else {
-                IPS_SetName($this->InstanceID, $this->Translate('MELCloud Device') . ' - ' . $DeviceAR['DeviceID']);
+                IPS_SetName($this->InstanceID, (string) $DeviceAR['DeviceID']);
             }
         }
 
@@ -1477,7 +1499,19 @@ class MELCloudDevice extends IPSModule
             $this->SendDebug(__FUNCTION__, $this->Translate('ERROR when sending data'), 0);
         }
 
+        // PHP 8: json_decode() wirft einen TypeError bei Nicht-String, und
+        // array_key_exists() crasht bei Nicht-Array. SendDataToParent liefert
+        // false, wenn der Parent (IO) nicht antwortet - das hier abfangen.
+        if (is_string($resultJson) === false) {
+            $this->SendDebug(__FUNCTION__, $this->Translate('ERROR when sending data') . ' // ' . $this->Translate('No valid response from I/O instance'), 0);
+            return false;
+        }
+
         $result = json_decode($resultJson, true);
+        if (is_array($result) === false) {
+            $this->SendDebug(__FUNCTION__, $this->Translate('ERROR when sending data') . ' // ' . $this->Translate('No valid response from I/O instance'), 0);
+            return false;
+        }
         if (@array_key_exists('error', $result) === true) {
             $error = $result['error'];
             $this->SendDebug(__FUNCTION__, $this->Translate('ERROR when sending data') . ' // ' . $this->Translate('Error') . ' = ' . $error, 0);
@@ -1621,7 +1655,7 @@ class MELCloudDevice extends IPSModule
             }
 
             // presets
-            if (@array_key_exists('NumberDescription', $DeviceAR['Presets'][0]) === true) {
+            if (is_array($DeviceAR['Presets'] ?? null) === true && count($DeviceAR['Presets']) > 0 && is_array($DeviceAR['Presets'][0]) === true && @array_key_exists('NumberDescription', $DeviceAR['Presets'][0]) === true) {
                 $this->Variable_Register('Preset', $this->Translate('Preset'), 'MEL.Presets.' . $this->InstanceID, '', 1, true);
                 $this->SetValue_IfDifferent('Preset', 99);
             }
