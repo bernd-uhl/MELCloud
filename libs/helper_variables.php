@@ -64,6 +64,13 @@ trait HelperVariables
         }
         IPS_SetVariableProfileIcon($Name, $Icon);
         IPS_SetVariableProfileText($Name, $Prefix, $Suffix);
+        // Schutz: IPS warnt, wenn Min > Max (z.B. Temperaturgrenzen aus leeren
+        // Buffern). In dem Fall tauschen, damit das Profil sauber angelegt wird.
+        if ($MinValue > $MaxValue) {
+            $tmp = $MinValue;
+            $MinValue = $MaxValue;
+            $MaxValue = $tmp;
+        }
         IPS_SetVariableProfileValues($Name, $MinValue, $MaxValue, $StepSize);
 
         return true;
@@ -128,6 +135,13 @@ trait HelperVariables
 
         IPS_SetVariableProfileIcon($Name, $Icon);
         IPS_SetVariableProfileText($Name, $Prefix, $Suffix);
+        // Schutz: IPS warnt, wenn Min > Max (z.B. Temperaturgrenzen aus leeren
+        // Buffern). In dem Fall tauschen, damit das Profil sauber angelegt wird.
+        if ($MinValue > $MaxValue) {
+            $tmp = $MinValue;
+            $MinValue = $MaxValue;
+            $MaxValue = $tmp;
+        }
         IPS_SetVariableProfileValues($Name, $MinValue, $MaxValue, $StepSize);
 
         return true;
@@ -192,6 +206,13 @@ trait HelperVariables
 
         IPS_SetVariableProfileIcon($Name, $Icon);
         IPS_SetVariableProfileText($Name, $Prefix, $Suffix);
+        // Schutz: IPS warnt, wenn Min > Max (z.B. Temperaturgrenzen aus leeren
+        // Buffern). In dem Fall tauschen, damit das Profil sauber angelegt wird.
+        if ($MinValue > $MaxValue) {
+            $tmp = $MinValue;
+            $MinValue = $MaxValue;
+            $MaxValue = $tmp;
+        }
         IPS_SetVariableProfileValues($Name, $MinValue, $MaxValue, $StepSize);
 
         return true;
@@ -253,6 +274,13 @@ trait HelperVariables
 
         IPS_SetVariableProfileIcon($Name, $Icon);
         IPS_SetVariableProfileText($Name, $Prefix, $Suffix);
+        // Schutz: IPS warnt, wenn Min > Max (z.B. Temperaturgrenzen aus leeren
+        // Buffern). In dem Fall tauschen, damit das Profil sauber angelegt wird.
+        if ($MinValue > $MaxValue) {
+            $tmp = $MinValue;
+            $MinValue = $MaxValue;
+            $MaxValue = $tmp;
+        }
         IPS_SetVariableProfileValues($Name, $MinValue, $MaxValue, $StepSize);
 
         return true;
