@@ -211,8 +211,6 @@ class MELCloudDevice extends IPSModule
         $FormData = '{
     "elements":
     [
-        { "type": "Label", "label": "##### MELCloud Device v1.0 by Bayaro - www.bayaro.net #####" },
-        { "type": "Label", "label": "##### 06.02.2019 - 07:40 #####"},
         { "type": "Label", "label": "' . $FormValue_LBL_DeviceName . '"},
         { "type": "Label", "label": "' . $FormValue_LBL_DeviceID . '"},
         { "type": "Label", "label": "' . $FormValue_LBL_DeviceType . '"},
@@ -1912,6 +1910,16 @@ class MELCloudDevice extends IPSModule
             }
 
             $this->SetBufferX('MultiBuffer_PresetsAR', $DataAR);
+
+            // PHP 8: array_key_exists() auf $DataAR[0] wirft einen TypeError,
+            // wenn die Anlage keine Presets hat ($DataAR ist dann null/leer).
+            // Daher zuerst prüfen, ob überhaupt ein nicht-leeres Array vorliegt.
+            if (is_array($DataAR) === false || count($DataAR) === 0) {
+                if ($DebugActive === true) {
+                    $this->SendDebug(__FUNCTION__, $this->Translate('No presets available - variable profile is not updated'), 0);
+                }
+                return false;
+            }
 
             if (@array_key_exists('NumberDescription', $DataAR[0]) === true) {
                 foreach ($DataAR as $PresetIndex => $PresetsEntry) {
