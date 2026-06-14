@@ -1,0 +1,14 @@
+{
+    "id": "{E68EFE77-E878-468C-8AD6-28952A2C4715}",
+    "name": "MELCloudConfigurator",
+    "type": 4,
+    "vendor": "Bayaro",
+    "aliases":
+    [
+        "MELCloud Configurator"
+    ],
+    "parentRequirements": ["{AF4E8025-2CFF-4B94-9C43-D68B868F281D}"],
+    "childRequirements": [],
+    "implemented": ["{F559250D-D19E-4C5E-9CC3-73747C0A76E6}"],
+    "prefix": "MELC"
+}

@@ -1,0 +1,14 @@
+{
+    "id": "{E65CACF9-2088-48F6-946A-9DF65C1B4527}",
+    "name": "MELCloudIO",
+    "type": 1,
+    "vendor": "Bayaro",
+    "aliases":
+    [
+        "MELCloud I/O"
+    ],
+    "parentRequirements": [],
+    "childRequirements": ["{F559250D-D19E-4C5E-9CC3-73747C0A76E6}"  ],
+    "implemented": ["{AF4E8025-2CFF-4B94-9C43-D68B868F281D}"],
+    "prefix": "MELIO"
+}

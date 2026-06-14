@@ -1,0 +1,30 @@
+{
+    "translations": {
+        "de": {
+			"##### MELCloud Configurator v1.0 by Bayaro - www.bayaro.net #####": "##### MELCloud Konfigurator v1.0 by Bayaro - www.bayaro.net #####",
+			"Category for device instance(s)": "Kategorie für Geräte-Instanz(en)",
+            "MELCloud Configurator": "MELCloud Konfigurator",
+            "Creating instance": "Instanz wird erstellt",
+            "I/O instance is inactive": "I/O Instanz ist inaktiv",
+            "Kernel is not ready! Kernel Runlevel = ": "Kernel ist nicht bereit! Kernel Runlevel  = ",
+            "Data": "Daten",
+            "Message": "Nachricht",
+            "Devices": "Geräte",
+            "Type": "Typ",
+            "Building-Name": "Gebäude-Name",
+            "Building-ID": "Gebäude-ID",
+            "Instance-ID": "Instanz-ID",
+            "Air conditioner": "Klimaanlage",
+            "Heat pump": "Wärmepumpe",
+            "UNKNOWN": "UNBEKANNT",
+            "The instance was created.": "Die Instanz wurde erstellt.",
+            "Login FAILED": "Anmeldung fehlgeschlagen",
+            "Please check the debug messages of the I/O instance": "Bitte die Debug-Meldungen der I/O-Instanz überprüfen",
+            "Create instance": "Instanz erstellen",
+            "Please contact the module developer // The search index of building and device differ.": "Bitte den Modul-Entwickler kontaktieren! // Der Search-Index von Gebäude und Gerät unterscheiden sich.",
+            "ERROR when sending data": "FEHLER beim Senden der Daten",
+            "Error": "Fehler",
+            "Response to the last command sent": "Antwort auf den zuletzt gesendeten Befehl"
+        }
+    }
+}

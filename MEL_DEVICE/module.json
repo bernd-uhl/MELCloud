@@ -1,0 +1,14 @@
+{
+    "id": "{E69F33DB-96B6-4C88-B446-14BCEDA86511}",
+    "name": "MELCloudDevice",
+    "type": 3,
+    "vendor": "Bayaro",
+    "aliases":
+    [
+        "MELCloud Device"
+    ],
+    "parentRequirements": ["{AF4E8025-2CFF-4B94-9C43-D68B868F281D}"],
+    "childRequirements": [],
+    "implemented": ["{F559250D-D19E-4C5E-9CC3-73747C0A76E6}"],
+    "prefix": "MEL"
+}
