@@ -189,8 +189,6 @@ class MELCloudConfigurator extends IPSModule
         $FormData_ElementsX = '{
 	"elements":
 	[
-	    { "type": "Label", "label": "##### MELCloud Configurator v1.0 by Bayaro - www.bayaro.net #####" },
-	    { "type": "Label", "label": "##### 28.12.2018 - 01:25 #####"},
 	    { "type": "SelectCategory", "name": "CategoryIDDeviceInstances", "caption": "Category for device instance(s)" }
 	],
 	"actions":
